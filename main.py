@@ -31,10 +31,11 @@ except Exception as e:
 #effect_line = pygame.mixer.Sound("assets/clear.wav")
 #effect_rotate = pygame.mixer.Sound("assets/rotate.wav")
 
-# Fuente para texto
+# Fuente para texto (solo para medir tamaño)
 font = pygame.font.SysFont("Arial", 24)
-# Configuración de pantalla / OpenGL
-display = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
+
+# Configuración de OpenGL
+pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
 gluOrtho2D(0, screen_width, screen_height, 0)
 clock = pygame.time.Clock()
 
@@ -46,8 +47,11 @@ fall_speed = 500  # ms
 t_last = pygame.time.get_ticks()
 paused = False
 
-# Botón de pausa (Rectángulo y símbolo '||')
-pause_btn = pygame.Rect(BOARD_WIDTH * CELL_SIZE + 50, 100, 40, 40)
+# Botón de pausa (posición y tamaño en coordenadas OpenGL)
+pause_btn_x = BOARD_WIDTH * CELL_SIZE + offset_x - 60
+pause_btn_y = 20
+pause_btn_w = 40
+pause_btn_h = 40
 
 running = True
 while running:
@@ -55,9 +59,6 @@ while running:
     for event in pygame.event.get():
         if event.type == QUIT:
             running = False
-        elif event.type == MOUSEBUTTONDOWN:
-            if pause_btn.collidepoint(event.pos):
-                paused = not paused
         elif event.type == KEYDOWN:
             if event.key == K_p:
                 paused = not paused
@@ -75,6 +76,13 @@ while running:
                 elif event.key == K_UP:
                     rotate_piece(current_piece, board)
                     #effect_rotate.play()
+        elif event.type == MOUSEBUTTONDOWN:
+            mx, my = event.pos
+            # OpenGL y-axis inverted, adaptar coordenada
+            my_gl = my
+            if (pause_btn_x <= mx <= pause_btn_x + pause_btn_w and
+                pause_btn_y <= my_gl <= pause_btn_y + pause_btn_h):
+                paused = not paused
 
     # Lógica de caída
     if not paused and now - t_last > fall_speed:
@@ -83,7 +91,7 @@ while running:
         else:
             fix_piece_to_board(board, current_piece)
             board, lines = clear_lines(board)
-            if lines:
+            if lines > 0:
                 score += lines * 100
                 #effect_line.play()
             current_piece = create_new_piece()
@@ -92,32 +100,78 @@ while running:
                 running = False
         t_last = now
 
-    # Renderizado OpenGL de piezas
+    # Renderizado
     glClear(GL_COLOR_BUFFER_BIT)
+    # Dibujar piezas
     graficos.draw_board(board)
     graficos.draw_piece(current_piece)
 
-    # Superponer UI con Pygame
-    screen = pygame.display.get_surface()
+    # Línea separadora
+    glColor3f(1, 1, 1)
+    glLineWidth(2)
+    glBegin(GL_LINES)
+    x_sep = BOARD_WIDTH * CELL_SIZE
+    glVertex2f(x_sep, 0)
+    glVertex2f(x_sep, screen_height)
+    glEnd()
+
     # Fondo UI lateral
-    ui_rect = pygame.Rect(BOARD_WIDTH * CELL_SIZE, 0, offset_x, screen_height)
-    pygame.draw.rect(screen, (30, 30, 30), ui_rect)
+    glColor3f(0.1, 0.1, 0.1)
+    glBegin(GL_QUADS)
+    glVertex2f(x_sep, 0)
+    glVertex2f(screen_width, 0)
+    glVertex2f(screen_width, screen_height)
+    glVertex2f(x_sep, screen_height)
+    glEnd()
 
-    # Puntaje (estilo Tetris: arriba izquierda)
-    score_label = font.render("SCORE", True, (255, 255, 255))
-    score_value = font.render(str(score), True, (255, 255, 255))
-    screen.blit(score_label, (BOARD_WIDTH * CELL_SIZE + 20, 20))
-    screen.blit(score_value, (BOARD_WIDTH * CELL_SIZE + 20, 50))
+    # Texto SCORE
+    sombra = font.render("SCORE", True, (  0,   0,   0))
+    dato_sombra =  pygame.image.tostring(sombra, "RGBA", True)
+    glWindowPos2d(x_sep + 21, 31)
+    glDrawPixels(sombra.get_width(), sombra.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, dato_sombra)
+    # Texto SCORE - cuadro
+    label = font.render("SCORE", True, (255, 255,   0))
+    data = pygame.image.tostring(label, "RGBA", True)
+    glWindowPos2d(x_sep+20, 30)
+    glDrawPixels(label.get_width(), label.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, data)
 
-    # Botón pausa con símbolo '||'
-    pygame.draw.rect(screen, (70, 70, 70), pause_btn)
-    # Dibujar dos barras verticales
-    bar_width = 8
-    bar_height = 30
-    bar_x = pause_btn.x + 8
-    bar_y = pause_btn.y + 5
-    pygame.draw.rect(screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height))
-    pygame.draw.rect(screen, (255, 255, 255), (bar_x + bar_width + 5, bar_y, bar_width, bar_height))
+
+
+    # Valor del puntaje debajo
+    value = font.render(str(score), True, (50, 205, 50))
+    vd = pygame.image.tostring(value, "RGBA", True)
+    glWindowPos2d(x_sep + 20, 60)
+    glDrawPixels(value.get_width(), value.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, vd)
+
+    # Botón Pausa - cuadro
+    glColor3f(0.3, 0.3, 0.3)
+    glBegin(GL_QUADS)
+    glVertex2f(pause_btn_x, pause_btn_y)
+    glVertex2f(pause_btn_x + pause_btn_w, pause_btn_y)
+    glVertex2f(pause_btn_x + pause_btn_w, pause_btn_y + pause_btn_h)
+    glVertex2f(pause_btn_x, pause_btn_y + pause_btn_h)
+    glEnd()
+    # Dibujar '||'
+    glColor3f(1, 1, 1)
+    gap = 8
+    bar_w = 6
+    bar_h = pause_btn_h - 10
+    bx = pause_btn_x + gap
+    # primera barra
+    glBegin(GL_QUADS)
+    glVertex2f(bx, pause_btn_y + 5)
+    glVertex2f(bx + bar_w, pause_btn_y + 5)
+    glVertex2f(bx + bar_w, pause_btn_y + 5 + bar_h)
+    glVertex2f(bx, pause_btn_y + 5 + bar_h)
+    glEnd()
+    # segunda barra
+    bx2 = bx + bar_w + gap
+    glBegin(GL_QUADS)
+    glVertex2f(bx2, pause_btn_y + 5)
+    glVertex2f(bx2 + bar_w, pause_btn_y + 5)
+    glVertex2f(bx2 + bar_w, pause_btn_y + 5 + bar_h)
+    glVertex2f(bx2, pause_btn_y + 5 + bar_h)
+    glEnd()
 
     pygame.display.flip()
     clock.tick(60)
