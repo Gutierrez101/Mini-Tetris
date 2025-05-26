@@ -3,30 +3,15 @@ import random
 BOARD_WIDTH = 10
 BOARD_HEIGHT = 20
 
-# Tetromino shapes and rotations
-tetromino_shapes = {
-    'O': [[(0,0), (1,0), (0,1), (1,1)]],
-    'I': [[(0,0), (0,1), (0,2), (0,3)], [(0,0), (1,0), (2,0), (3,0)]],
-    'T': [
-        [(1,0), (0,1), (1,1), (2,1)],
-        [(1,0), (1,1), (2,1), (1,2)],
-        [(0,1), (1,1), (2,1), (1,2)],
-        [(1,0), (0,1), (1,1), (1,2)]
-    ],
-    'L': [
-        [(0,0), (0,1), (0,2), (1,2)],
-        [(0,1), (1,1), (2,1), (2,0)],
-        [(0,0), (1,0), (1,1), (1,2)],
-        [(0,1), (1,1), (2,1), (0,2)]
-    ],
-    'J': [
-        [(1,0), (1,1), (1,2), (0,2)],
-        [(0,0), (0,1), (1,1), (2,1)],
-        [(0,0), (1,0), (0,1), (0,2)],
-        [(0,0), (1,0), (2,0), (2,1)]
-    ],
-    'S': [[(1,0), (2,0), (0,1), (1,1)], [(0,0), (0,1), (1,1), (1,2)]],
-    'Z': [[(0,0), (1,0), (1,1), (2,1)], [(1,0), (0,1), (1,1), (0,2)]]
+# Base tetromino shapes (single orientation)
+base_shapes = {
+    'O': [(0,0), (1,0), (0,1), (1,1)],
+    'I': [(0,0), (0,1), (0,2), (0,3)],
+    'T': [(1,0), (0,1), (1,1), (2,1)],
+    'L': [(0,0), (0,1), (0,2), (1,2)],
+    'J': [(1,0), (1,1), (1,2), (0,2)],
+    'S': [(1,0), (2,0), (0,1), (1,1)],
+    'Z': [(0,0), (1,0), (1,1), (2,1)]
 }
 
 # Color map for each tetromino type
@@ -40,21 +25,23 @@ colors = {
     'Z': (1.0, 0.0, 0.0)
 }
 
+
 def create_new_piece():
-    """Genera una nueva pieza aleatoria en la parte superior del tablero"""
-    piece_type = random.choice(list(tetromino_shapes.keys()))
+    """Genera una nueva pieza con forma base y posición inicial"""
+    piece_type = random.choice(list(base_shapes.keys()))
+    # Copy base shape offsets
+    shape = base_shapes[piece_type].copy()
     return {
         'type': piece_type,
-        'rotation': 0,
+        'shape': shape,
         'position': [BOARD_WIDTH // 2 - 1, 0]
     }
 
 
 def get_blocks(piece):
     """Devuelve las coordenadas absolutas de los bloques de la pieza"""
-    shape = tetromino_shapes[piece['type']][piece['rotation']]
     px, py = piece['position']
-    return [(px + x, py + y) for x, y in shape]
+    return [(px + x, py + y) for x, y in piece['shape']]
 
 
 def is_valid_position(board, piece, offset=(0, 0)):
@@ -85,8 +72,33 @@ def clear_lines(board):
 
 
 def rotate_piece(piece, board):
-    """Rota la pieza y revierte si la rotación no es válida"""
-    old_rotation = piece['rotation']
-    piece['rotation'] = (piece['rotation'] + 1) % len(tetromino_shapes[piece['type']])
+    """Rota la pieza 90° CW usando matriz de rotación en torno a pivote específico y revierte si no cabe"""
+    # Definir pivote para cada tipo (en coordenadas de bloque)
+    pivots = {
+        'O': (0.5, 0.5),
+        'I': (1.5, 1.5),
+        'T': (1, 1),
+        'L': (1, 1),
+        'J': (1, 1),
+        'S': (1, 1),
+        'Z': (1, 1)
+    }
+    pivot = pivots.get(piece['type'], (1, 1))
+    px, py = pivot
+
+    new_shape = []
+    for x, y in piece['shape']:
+        # trasladar al pivote
+        tx, ty = x - px, y - py
+        # rotar 90° CW
+        rx, ry = -ty, tx
+        # trasladar de vuelta
+        new_x = int(round(rx + px))
+        new_y = int(round(ry + py))
+        new_shape.append((new_x, new_y))
+
+    # Probar validez
+    old_shape = piece['shape']
+    piece['shape'] = new_shape
     if not is_valid_position(board, piece):
-        piece['rotation'] = old_rotation
+        piece['shape'] = old_shape  # revertir si falla

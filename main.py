@@ -9,37 +9,55 @@ from logica_juego import (
     is_valid_position, fix_piece_to_board, clear_lines, rotate_piece
 )
 import graficos
+from graficos import CELL_SIZE
+
+# Parámetros de pantalla con margen para UI
+offset_x = 200  # espacio lateral para UI
+screen_width = BOARD_WIDTH * CELL_SIZE + offset_x
+screen_height = BOARD_HEIGHT * CELL_SIZE
 
 # Inicialización
 pygame.init()
 pygame.mixer.init()
-font = pygame.font.SysFont("Arial", 24)
+# Música de fondo
+try:
+    pygame.mixer.music.load("tetris_music.mp3")
+    pygame.mixer.music.set_volume(0.5)
+    pygame.mixer.music.play(-1)
+except Exception as e:
+    print(f"No se pudo cargar música: {e}")
 
-screen_size = (BOARD_WIDTH * graficos.CELL_SIZE, BOARD_HEIGHT * graficos.CELL_SIZE)
-pygame.display.set_mode(screen_size, DOUBLEBUF | OPENGL)
-gluOrtho2D(0, screen_size[0], screen_size[1], 0)
-clock = pygame.time.Clock()
-
-# Carga de sonidos
-effect_line = pygame.mixer.Sound("tetris_music.wav")
+# Sonidos de efectos
+#effect_line = pygame.mixer.Sound("assets/clear.wav")
 #effect_rotate = pygame.mixer.Sound("assets/rotate.wav")
+
+# Fuente para texto
+font = pygame.font.SysFont("Arial", 24)
+# Configuración de pantalla / OpenGL
+display = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
+gluOrtho2D(0, screen_width, screen_height, 0)
+clock = pygame.time.Clock()
 
 # Estado del juego
 board = [[""] * BOARD_WIDTH for _ in range(BOARD_HEIGHT)]
 current_piece = create_new_piece()
 score = 0
-fall_speed = 500  # milisegundos
-last_fall = pygame.time.get_ticks()
+fall_speed = 500  # ms
+t_last = pygame.time.get_ticks()
 paused = False
+
+# Botón de pausa (Rectángulo y símbolo '||')
+pause_btn = pygame.Rect(BOARD_WIDTH * CELL_SIZE + 50, 100, 40, 40)
 
 running = True
 while running:
     now = pygame.time.get_ticks()
-
-    # Eventos
     for event in pygame.event.get():
         if event.type == QUIT:
             running = False
+        elif event.type == MOUSEBUTTONDOWN:
+            if pause_btn.collidepoint(event.pos):
+                paused = not paused
         elif event.type == KEYDOWN:
             if event.key == K_p:
                 paused = not paused
@@ -51,7 +69,6 @@ while running:
                 elif event.key == K_DOWN and is_valid_position(board, current_piece, (0, 1)):
                     current_piece['position'][1] += 1
                 elif event.key == K_SPACE:
-                    # Caída instantánea
                     while is_valid_position(board, current_piece, (0, 1)):
                         current_piece['position'][1] += 1
                     current_piece['position'][1] -= 1
@@ -59,39 +76,48 @@ while running:
                     rotate_piece(current_piece, board)
                     #effect_rotate.play()
 
-    # Lógica de caída automática
-    if not paused and now - last_fall > fall_speed:
+    # Lógica de caída
+    if not paused and now - t_last > fall_speed:
         if is_valid_position(board, current_piece, (0, 1)):
             current_piece['position'][1] += 1
         else:
             fix_piece_to_board(board, current_piece)
             board, lines = clear_lines(board)
-            if lines > 0:
+            if lines:
                 score += lines * 100
-                effect_line.play()
+                #effect_line.play()
             current_piece = create_new_piece()
             if not is_valid_position(board, current_piece):
-                print("Game Over - Puntaje final:", score)
+                print(f"Game Over - Puntaje final: {score}")
                 running = False
-        last_fall = now
+        t_last = now
 
-    # Renderizado
+    # Renderizado OpenGL de piezas
     glClear(GL_COLOR_BUFFER_BIT)
     graficos.draw_board(board)
     graficos.draw_piece(current_piece)
 
-    # Dibujar puntaje
-    score_surf = font.render(f"Puntaje: {score}", True, (255, 255, 255))
-    score_data = pygame.image.tostring(score_surf, "RGBA", True)
-    glWindowPos2d(10, 10)
-    glDrawPixels(score_surf.get_width(), score_surf.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, score_data)
+    # Superponer UI con Pygame
+    screen = pygame.display.get_surface()
+    # Fondo UI lateral
+    ui_rect = pygame.Rect(BOARD_WIDTH * CELL_SIZE, 0, offset_x, screen_height)
+    pygame.draw.rect(screen, (30, 30, 30), ui_rect)
 
-    # Dibujar pausa
-    if paused:
-        pause_surf = font.render("PAUSA", True, (255, 255, 0))
-        pause_data = pygame.image.tostring(pause_surf, "RGBA", True)
-        glWindowPos2d((BOARD_WIDTH * graficos.CELL_SIZE)//2 - 40, (BOARD_HEIGHT * graficos.CELL_SIZE)//2)
-        glDrawPixels(pause_surf.get_width(), pause_surf.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, pause_data)
+    # Puntaje (estilo Tetris: arriba izquierda)
+    score_label = font.render("SCORE", True, (255, 255, 255))
+    score_value = font.render(str(score), True, (255, 255, 255))
+    screen.blit(score_label, (BOARD_WIDTH * CELL_SIZE + 20, 20))
+    screen.blit(score_value, (BOARD_WIDTH * CELL_SIZE + 20, 50))
+
+    # Botón pausa con símbolo '||'
+    pygame.draw.rect(screen, (70, 70, 70), pause_btn)
+    # Dibujar dos barras verticales
+    bar_width = 8
+    bar_height = 30
+    bar_x = pause_btn.x + 8
+    bar_y = pause_btn.y + 5
+    pygame.draw.rect(screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height))
+    pygame.draw.rect(screen, (255, 255, 255), (bar_x + bar_width + 5, bar_y, bar_width, bar_height))
 
     pygame.display.flip()
     clock.tick(60)
