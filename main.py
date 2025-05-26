@@ -5,16 +5,16 @@ from OpenGL.GLU import *
 import pygame.mixer
 
 from logica_juego import (
-    BOARD_WIDTH, BOARD_HEIGHT, create_new_piece,
-    is_valid_position, fix_piece_to_board, clear_lines, rotate_piece
+    pantalla_ancho, pantalla_alto, crear_nueva_pieza,
+    validar_posicion, fijar_piezas, limpiar_lineas, rotar_pieza
 )
 import graficos
-from graficos import CELL_SIZE
+from graficos import tamanio_celda
 
 # Parámetros de pantalla con margen para UI
 offset_x = 200  # espacio lateral para UI
-screen_width = BOARD_WIDTH * CELL_SIZE + offset_x
-screen_height = BOARD_HEIGHT * CELL_SIZE
+screen_width = pantalla_ancho * tamanio_celda + offset_x
+screen_height = pantalla_alto * tamanio_celda
 
 # Inicialización
 pygame.init()
@@ -40,15 +40,15 @@ gluOrtho2D(0, screen_width, screen_height, 0)
 clock = pygame.time.Clock()
 
 # Estado del juego
-board = [[""] * BOARD_WIDTH for _ in range(BOARD_HEIGHT)]
-current_piece = create_new_piece()
+board = [[""] * pantalla_ancho for _ in range(pantalla_alto)]
+current_piece = crear_nueva_pieza()
 score = 0
 fall_speed = 500  # ms
 t_last = pygame.time.get_ticks()
 paused = False
 
 # Botón de pausa (posición y tamaño en coordenadas OpenGL)
-pause_btn_x = BOARD_WIDTH * CELL_SIZE + offset_x - 60
+pause_btn_x = pantalla_ancho* tamanio_celda + offset_x - 60
 pause_btn_y = 20
 pause_btn_w = 40
 pause_btn_h = 40
@@ -63,18 +63,18 @@ while running:
             if event.key == K_p:
                 paused = not paused
             if not paused:
-                if event.key == K_LEFT and is_valid_position(board, current_piece, (-1, 0)):
+                if event.key == K_LEFT and validar_posicion(board, current_piece, (-1, 0)):
                     current_piece['position'][0] -= 1
-                elif event.key == K_RIGHT and is_valid_position(board, current_piece, (1, 0)):
+                elif event.key == K_RIGHT and validar_posicion(board, current_piece, (1, 0)):
                     current_piece['position'][0] += 1
-                elif event.key == K_DOWN and is_valid_position(board, current_piece, (0, 1)):
+                elif event.key == K_DOWN and validar_posicion(board, current_piece, (0, 1)):
                     current_piece['position'][1] += 1
                 elif event.key == K_SPACE:
-                    while is_valid_position(board, current_piece, (0, 1)):
+                    while validar_posicion(board, current_piece, (0, 1)):
                         current_piece['position'][1] += 1
                     current_piece['position'][1] -= 1
                 elif event.key == K_UP:
-                    rotate_piece(current_piece, board)
+                    rotar_pieza(current_piece, board)
                     #effect_rotate.play()
         elif event.type == MOUSEBUTTONDOWN:
             mx, my = event.pos
@@ -86,16 +86,16 @@ while running:
 
     # Lógica de caída
     if not paused and now - t_last > fall_speed:
-        if is_valid_position(board, current_piece, (0, 1)):
+        if validar_posicion(board, current_piece, (0, 1)):
             current_piece['position'][1] += 1
         else:
-            fix_piece_to_board(board, current_piece)
-            board, lines = clear_lines(board)
+            fijar_piezas(board, current_piece)
+            board, lines = limpiar_lineas(board)
             if lines > 0:
                 score += lines * 100
                 #effect_line.play()
-            current_piece = create_new_piece()
-            if not is_valid_position(board, current_piece):
+            current_piece = crear_nueva_pieza()
+            if not validar_posicion(board, current_piece):
                 print(f"Game Over - Puntaje final: {score}")
                 running = False
         t_last = now
@@ -110,7 +110,7 @@ while running:
     glColor3f(1, 1, 1)
     glLineWidth(2)
     glBegin(GL_LINES)
-    x_sep = BOARD_WIDTH * CELL_SIZE
+    x_sep = pantalla_ancho * tamanio_celda
     glVertex2f(x_sep, 0)
     glVertex2f(x_sep, screen_height)
     glEnd()
@@ -134,8 +134,6 @@ while running:
     data = pygame.image.tostring(label, "RGBA", True)
     glWindowPos2d(x_sep+20, 30)
     glDrawPixels(label.get_width(), label.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, data)
-
-
 
     # Valor del puntaje debajo
     value = font.render(str(score), True, (50, 205, 50))

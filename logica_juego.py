@@ -1,10 +1,10 @@
 import random
 
-BOARD_WIDTH = 10
-BOARD_HEIGHT = 20
+pantalla_ancho = 10
+pantalla_alto = 20
 
-# Base tetromino shapes (single orientation)
-base_shapes = {
+# Base figuras (simple orientacion)
+base_figuras = {
     'O': [(0,0), (1,0), (0,1), (1,1)],
     'I': [(0,0), (0,1), (0,2), (0,3)],
     'T': [(1,0), (0,1), (1,1), (2,1)],
@@ -26,52 +26,52 @@ colors = {
 }
 
 
-def create_new_piece():
+def crear_nueva_pieza():
     """Genera una nueva pieza con forma base y posición inicial"""
-    piece_type = random.choice(list(base_shapes.keys()))
+    piece_type = random.choice(list(base_figuras.keys()))
     # Copy base shape offsets
-    shape = base_shapes[piece_type].copy()
+    shape = base_figuras[piece_type].copy()
     return {
         'type': piece_type,
         'shape': shape,
-        'position': [BOARD_WIDTH // 2 - 1, 0]
+        'position': [pantalla_ancho // 2 - 1, 0]
     }
 
 
-def get_blocks(piece):
+def obtener_bloques(piece):
     """Devuelve las coordenadas absolutas de los bloques de la pieza"""
     px, py = piece['position']
     return [(px + x, py + y) for x, y in piece['shape']]
 
 
-def is_valid_position(board, piece, offset=(0, 0)):
+def validar_posicion(board, piece, offset=(0, 0)):
     """Verifica colisiones con bordes y celdas fijadas"""
-    for x, y in get_blocks(piece):
+    for x, y in obtener_bloques(piece):
         nx, ny = x + offset[0], y + offset[1]
-        if nx < 0 or nx >= BOARD_WIDTH or ny >= BOARD_HEIGHT:
+        if nx < 0 or nx >= pantalla_ancho or ny >= pantalla_alto:
             return False
         if ny >= 0 and board[ny][nx] != "":
             return False
     return True
 
 
-def fix_piece_to_board(board, piece):
+def fijar_piezas(board, piece):
     """Fija la pieza actual al tablero"""
-    for x, y in get_blocks(piece):
+    for x, y in obtener_bloques(piece):
         if y >= 0:
             board[y][x] = piece['type']
 
 
-def clear_lines(board):
+def limpiar_lineas(board):
     """Detecta y elimina filas completas, retorna tablero modificado y cantidad de líneas borradas"""
     new_board = [row for row in board if any(cell == "" for cell in row)]
-    lines_cleared = BOARD_HEIGHT - len(new_board)
+    lines_cleared = pantalla_alto - len(new_board)
     for _ in range(lines_cleared):
-        new_board.insert(0, [""] * BOARD_WIDTH)
+        new_board.insert(0, [""] * pantalla_ancho)
     return new_board, lines_cleared
 
 
-def rotate_piece(piece, board):
+def rotar_pieza(piece, board):
     """Rota la pieza 90° CW usando matriz de rotación en torno a pivote específico y revierte si no cabe"""
     # Definir pivote para cada tipo (en coordenadas de bloque)
     pivots = {
@@ -100,5 +100,5 @@ def rotate_piece(piece, board):
     # Probar validez
     old_shape = piece['shape']
     piece['shape'] = new_shape
-    if not is_valid_position(board, piece):
+    if not validar_posicion(board, piece):
         piece['shape'] = old_shape  # revertir si falla
