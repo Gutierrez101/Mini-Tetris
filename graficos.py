@@ -1,5 +1,5 @@
 from OpenGL.GL import *
-from logica_juego import colors, get_blocks
+from logica_juego import colors, obtener_bloques,pantalla_alto, pantalla_ancho
 
 tamanio_celda = 30
 
