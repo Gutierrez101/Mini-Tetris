@@ -13,8 +13,8 @@ from graficos import tamanio_celda
 
 # Parámetros de pantalla con margen para UI
 offset_x = 200  # espacio lateral para UI
-screen_width = pantalla_ancho * tamanio_celda + offset_x
-screen_height = pantalla_alto * tamanio_celda
+ancho_pantalla = pantalla_ancho * tamanio_celda + offset_x
+alto_pantalla = pantalla_alto * tamanio_celda
 
 # Inicialización
 pygame.init()
@@ -28,15 +28,15 @@ except Exception as e:
     print(f"No se pudo cargar música: {e}")
 
 # Sonidos de efectos
-#effect_line = pygame.mixer.Sound("assets/clear.wav")
-#effect_rotate = pygame.mixer.Sound("assets/rotate.wav")
+#linea_efecto = pygame.mixer.Sound("assets/clear.wav")
+#efecto_rotar = pygame.mixer.Sound("assets/rotate.wav")
 
 # Fuente para texto (solo para medir tamaño)
 font = pygame.font.SysFont("Arial", 24)
 
 # Configuración de OpenGL
-pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
-gluOrtho2D(0, screen_width, screen_height, 0)
+pygame.display.set_mode((ancho_pantalla, alto_pantalla), DOUBLEBUF | OPENGL)
+gluOrtho2D(0, ancho_pantalla, alto_pantalla, 0)
 clock = pygame.time.Clock()
 
 # Estado del juego
@@ -116,16 +116,16 @@ while running:
     glLineWidth(2)
     glBegin(GL_LINES)
     glVertex2f(x_sep, 0)
-    glVertex2f(x_sep, screen_height)
+    glVertex2f(x_sep, alto_pantalla)
     glEnd()
 
     # Fondo UI lateral
     glColor3f(0.1, 0.1, 0.1)
     glBegin(GL_QUADS)
     glVertex2f(x_sep, 0)
-    glVertex2f(screen_width, 0)
-    glVertex2f(screen_width, screen_height)
-    glVertex2f(x_sep, screen_height)
+    glVertex2f(ancho_pantalla, 0)
+    glVertex2f(ancho_pantalla, alto_pantalla)
+    glVertex2f(x_sep, ancho_pantalla)
     glEnd()
 
     # Texto SCORE
@@ -185,7 +185,7 @@ while running:
     if paused:
         pausa_label = font.render("PAUSA", True, (255, 0, 0))
         pausa_data = pygame.image.tostring(pausa_label, "RGBA", True)
-        glWindowPos2d(screen_width // 2 - pausa_label.get_width() // 2, screen_height // 2 - pausa_label.get_height() // 2)
+        glWindowPos2d(ancho_pantalla // 2 - pausa_label.get_width() // 2, alto_pantalla // 2 - pausa_label.get_height() // 2)
         glDrawPixels(pausa_label.get_width(), pausa_label.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, pausa_data)
 
     # Texto "SIGUIENTE"
@@ -211,8 +211,8 @@ while running:
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glWindowPos2d(
-            screen_width // 2 - game_over_label.get_width() // 2,
-            screen_height // 2 - 100
+            ancho_pantalla // 2 - game_over_label.get_width() // 2,
+            alto_pantalla // 2 - 100
         )
         glDrawPixels(
             game_over_label.get_width(),
@@ -223,14 +223,14 @@ while running:
         )
 
         # Botón Reintentar
-        retry_x = screen_width // 2 - 110
-        retry_y = screen_height // 2
+        retry_x = ancho_pantalla // 2 - 110
+        retry_y = alto_pantalla// 2
         retry_w = 100
         retry_h = 50
 
         # Botón Cerrar
-        close_x = screen_width // 2 + 10
-        close_y = screen_height // 2
+        close_x = ancho_pantalla // 2 + 10
+        close_y = alto_pantalla // 2
         close_w = 100
         close_h = 50
 
