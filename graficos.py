@@ -1,5 +1,5 @@
 from OpenGL.GL import *
-from logica_juego import colors, get_blocks
+from logica_juego import colors, obtener_bloques
 
 tamanio_celda = 30
 
@@ -22,6 +22,6 @@ def dibujar_pantalla(board):
 
 #dibujar cada pieza
 def dibujar_pieza(piece):
-    for x, y in get_blocks(piece):
+    for x, y in obtener_bloques(piece):
         if y >= 0:
             dibujar_celda(x, y, colors[piece['type']])
