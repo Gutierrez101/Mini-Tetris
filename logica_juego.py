@@ -44,6 +44,10 @@ def obtener_bloques(piece):
     return [(px + x, py + y) for x, y in piece['shape']]
 
 
+def get_blocks(piece):
+    return obtener_bloques(piece)
+
+
 def validar_posicion(board, piece, offset=(0, 0)):
     """Verifica colisiones con bordes y celdas fijadas"""
     for x, y in obtener_bloques(piece):
