@@ -3,7 +3,7 @@ from logica_juego import colors, get_blocks
 
 tamanio_celda = 30
 
-
+#dibujar celdas
 def dibujar_celda(x, y, color):
     glColor3f(*color)
     glBegin(GL_QUADS)
@@ -13,14 +13,14 @@ def dibujar_celda(x, y, color):
     glVertex2f(x * tamanio_celda, (y + 1) * tamanio_celda)
     glEnd()
 
-
+#dinujar la pantalla del juego
 def dibujar_pantalla(board):
     for y, row in enumerate(board):
         for x, cell in enumerate(row):
             if cell:
                 dibujar_celda(x, y, colors[cell])
 
-
+#dibujar cada pieza
 def dibujar_pieza(piece):
     for x, y in get_blocks(piece):
         if y >= 0:
